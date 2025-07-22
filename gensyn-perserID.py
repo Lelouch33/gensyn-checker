@@ -76,21 +76,21 @@ def load_peer_ids():
         return []
 
 def get_leaderboard():
-    url = "https://dashboard.gensyn.ai/api/v1/leaderboard"
-    try:
-        resp = requests.get(url)
-        resp.raise_for_status()
-        data = resp.json()
-        leaderboard = {}
-        for rank, entry in enumerate(data.get("entries", []), start=1):
-            peer_id = entry.get("peerId")
-            if peer_id:
-                leaderboard[peer_id] = rank
-        print("✅ Leaderboard loaded successfully.")
-        return leaderboard
-    except Exception as e:
-        print(f"[⛔] Failed to fetch leaderboard: {e}")
-        return {}
+    leaderboard = {}
+    peer_ids = load_peer_ids()
+    for pid in peer_ids:
+        try:
+            url = f"https://gswarm.dev/api/peer-id-scan?peerId={pid}"
+            resp = requests.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+            rank = data.get("rank")
+            if rank is not None:
+                leaderboard[pid] = rank
+        except Exception as e:
+            print(f"[⛔] Failed to fetch rank for {pid}: {e}")
+    print("✅ Leaderboard loaded successfully.")
+    return leaderboard
 
 def format_delta(current, previous):
     if previous is None:
@@ -135,7 +135,7 @@ def main_loop():
 
             votes_val = escape_md(str(votes)) if votes != "⛔" else "⛔"
             reward_val = escape_md(f"{reward:g}") if isinstance(reward, float) else "⛔"
-            rank_str = f"🏆 Rank: {rank}" if rank else "🏆 Rank: —"
+            rank_str = f"🏆 Ранг: {rank}" if rank else "🏆 Ранг: —"
 
             lines.append(f"`{escape_md(pid[-10:])}`")
             lines.append(f"  • Participation: {votes_val} {votes_delta}")
